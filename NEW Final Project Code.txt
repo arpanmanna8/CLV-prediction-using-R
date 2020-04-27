@@ -1,0 +1,111 @@
+##IMPORTING LIBRARIES
+
+library(vars)
+library(car)
+library(lmtest)
+library(nortest)
+library(boot)
+library(QuantPsyc)
+library(MASS)
+
+
+##IMPORTING DATA FROM CSV FRORMAT
+
+setwd("C:\\Users\\lenovo\\Desktop\\Arpan\\R")
+data <- read.csv("Fn-UseC_-Marketing-Customer-Value-Analysis.csv")
+
+
+##DATA CLEANING
+head(data)
+str(data)
+
+d <-data
+head(d)
+str(d)
+
+names(d)[names(d) == "Customer.Lifetime.Value"] <- "CLV"
+
+d$Number.of.Open.Complaints <- as.factor(d$Number.of.Open.Complaints)
+d$Number.of.Policies <- as.factor(d$Number.of.Policies)
+
+str(d)
+nrow(d)
+sapply(d, function(x) sum(is.na(x)))
+
+boxplot(d$CLV)
+quantile(d$CLV, c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99,1))
+
+d1 <- d[d$CLV < 22064,]
+boxplot(d1$CLV)
+quantile(d1$CLV, c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99,1))
+
+d1 <- d1[d1$CLV < 15628,]
+boxplot(d1$CLV)
+quantile(d1$CLV, c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.95,0.99,1))
+d1 <- d1[d1$CLV < 14275,]
+boxplot(d1$CLV)
+nrow(d1)
+
+d <- d1
+nrow(d)
+
+
+##MODELING AS LINEAR REGRESSION
+
+
+str(d)
+
+fit <- lm(CLV ~ State + Response + Coverage + Education + 
+Effective.To.Date + EmploymentStatus + Gender + Income + Location.Code +
+Marital.Status + Monthly.Premium.Auto + Months.Since.Last.Claim +
+Months.Since.Policy.Inception + Number.of.Open.Complaints +
+Number.of.Policies + Policy.Type + Policy + Renew.Offer.Type +
+Sales.Channel + Total.Claim.Amount + Vehicle.Class + Vehicle.Size, data=d)
+
+summary(fit)
+
+fit <- lm(CLV ~ Coverage + Education + 
+I(Effective.To.Date == "01-03-2011") + I(Effective.To.Date == "01-08-2011") +
+I(EmploymentStatus == "Employed") +I(EmploymentStatus == "Unemployed") + 
+Gender + Income + Marital.Status + Monthly.Premium.Auto +
+Number.of.Open.Complaints + Number.of.Policies +
+I(Vehicle.Class == "Luxury SUV") + I(Vehicle.Class == "SUV"), data=d)
+
+summary(fit)
+
+
+
+##STATISTICAL TESTS
+
+##MAPE
+d$pred <- fitted(fit)
+d$pred
+head(d)
+
+
+##CALCULATING MAPE
+attach(d)
+(sum((abs(CLV-pred))/CLV))/nrow(d)
+
+##MULTICOLINEARITY TEST
+vif(fit)
+
+##HOMOSCEDASTICITY CHECK	
+bptest(fit)
+
+##NORMALITY TEST
+resids <- fit$residuals
+
+ad.test(resids)
+pearson.test(resids)
+
+qqnorm(resids)
+
+head(d)
+
+
+write.csv(d,"PredictedCLV.csv")
+
+
+
+
